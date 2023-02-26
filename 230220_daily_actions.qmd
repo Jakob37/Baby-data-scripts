@@ -1,0 +1,116 @@
+---
+title: "Baby data"
+format:
+    html:
+        code-fold: true
+jupyter: python
+---
+
+```{bash}
+conda activate /home/leisure/anaconda3
+```
+
+```{python}
+import pandas as pd
+from matplotlib import pyplot as plt
+import datetime
+import seaborn as sns
+```
+
+```{python}
+df = pd.read_csv("230220_daily_actions.csv")
+print(df.columns)
+
+feeds_df = df[df['type'] == 'bottle']
+sleep_df = df[df['type'] == 'sleeping']
+
+datetime.datetime.fromtimestamp(1672070966412/1000)
+
+feeds_df['day'] = feeds_df.apply(lambda row: datetime.datetime.fromtimestamp(row['start_millis']/1000).day, axis=1)
+feeds_df['month'] = feeds_df.apply(lambda row: datetime.datetime.fromtimestamp(row['start_millis']/1000).month, axis=1)
+feeds_df['hour'] = feeds_df.apply(lambda row: datetime.datetime.fromtimestamp(row['start_millis']/1000).hour, axis=1)
+feeds_df['minute'] = feeds_df.apply(lambda row: datetime.datetime.fromtimestamp(row['start_millis']/1000).minute, axis=1)
+
+feeds_time_df = feeds_df[['volume', 'day', 'month', 'hour', 'minute', 'start_millis']]
+
+feeds_time_df['month_day'] = feeds_time_df[['month', 'day']].apply(lambda x: "-".join([str(x) for x in x]), axis=1)
+
+feeds_time_df
+
+feeds_time_df.plot.scatter('start_millis', 'volume')
+
+# plt.savefig('plot.png')
+```
+
+Group data per day
+
+```{python}
+summed = feeds_time_df.groupby(by=["month_day"], ).sum()
+summed.reset_index(inplace=True)
+```
+
+```{python}
+help(feeds_time_df.groupby)
+```
+
+```{python}
+summed.plot.bar('month_day', 'volume')
+```
+
+Let's explore things for one day only
+
+```{python}
+one_day = feeds_time_df[feeds_time_df['month_day'] == "2-20"]
+```
+
+```{python}
+one_day['acc_volume'] = one_day['volume'].cumsum()
+one_day.plot.line('hour', 'acc_volume')
+
+
+```
+
+Now let's see if we can reproduce for multiple days
+
+```{python}
+two_days = feeds_time_df[feeds_time_df['month_day'].isin(["2-18", "2-19", "2-20"])]
+
+parsed = two_days.groupby('month_day').apply(
+    lambda group: pd.DataFrame({
+        'month_day': group['month_day'],
+        'acc_volume': group['volume'].cumsum(), 
+        'volume': group['volume'],
+        'hour': group['hour']
+    })
+)
+
+parsed.pivot(index='month_day', columns=['hour'], values='acc_volume')
+
+parsed.groupby('month_day')['hour', 'acc_volume'].plot(legend=True)
+
+# fig, ax = plt.subplot()
+# for label, grp in parsed.groupby('month_day'):
+#     grp.plot(x = grp.index, y='acc_volume', ax=ax, label=label)
+
+sns.lineplot(data=parsed, x='hour', y='acc_volume', hue='month_day')
+```
+
+Time for all days
+
+```{python}
+parsed_all = feeds_time_df.groupby('month_day').apply(
+    lambda group: pd.DataFrame({
+        'month_day': group['month_day'],
+        'acc_volume': group['volume'].cumsum(), 
+        'volume': group['volume'],
+        'month': group['month'],
+        'hour': group['hour']
+    })
+)
+
+# fig, ax = plt.subplot()
+# for label, grp in parsed.groupby('month_day'):
+#     grp.plot(x = grp.index, y='acc_volume', ax=ax, label=label)
+
+sns.lineplot(data=parsed_all, x='hour', y='acc_volume', hue='month')
+```
