@@ -18,7 +18,7 @@ import seaborn as sns
 ```
 
 ```{python}
-df = pd.read_csv("230220_daily_actions.csv")
+df = pd.read_csv("230226_daily_actions.csv")
 print(df.columns)
 
 feeds_df = df[df['type'] == 'bottle']
@@ -108,9 +108,18 @@ parsed_all = feeds_time_df.groupby('month_day').apply(
     })
 )
 
+parsed_all['Month'] = parsed_all['month'].apply(lambda x: str(x))
+
+# feeds_time_df[['month', 'day']].apply(lambda x: "-".join([str(x) for x in x]), axis=1)
+
 # fig, ax = plt.subplot()
 # for label, grp in parsed.groupby('month_day'):
 #     grp.plot(x = grp.index, y='acc_volume', ax=ax, label=label)
 
-sns.lineplot(data=parsed_all, x='hour', y='acc_volume', hue='month')
+chart = sns.lineplot(data=parsed_all, x='hour', y='acc_volume', hue='Month')
+chart.set_title("Alvar eating-patterns")
+chart.set_xlabel("Time of day (hour)")
+chart.set_ylabel("Accumulated volume (ml)")
+fig = chart.get_figure()
+fig.savefig('plot.png', dpi=600)
 ```
