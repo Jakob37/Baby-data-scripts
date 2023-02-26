@@ -6,10 +6,6 @@ format:
 jupyter: python
 ---
 
-```{bash}
-conda activate /home/leisure/anaconda3
-```
-
 ```{python}
 import pandas as pd
 from matplotlib import pyplot as plt
